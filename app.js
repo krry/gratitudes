@@ -12,16 +12,16 @@ function shuffleArray(array) {
     return shuffled;
 }
 
-const shuffledPrompts = shuffleArray(prompts);
+const shuffledQuotes = shuffleArray(quotes);
 
-function createCard(prompt, index) {
+function createCard(quote, index) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.style.zIndex = prompts.length - index;
+    card.style.zIndex = quotes.length - index;
     
     card.innerHTML = `
-        <div class="emoji">${prompt.emoji}</div>
-        <div class="prompt">${prompt.text}</div>
+        <div class="quote">"${quote.text}"</div>
+        <div class="author">— ${quote.author}</div>
     `;
     
     // Touch events
@@ -38,7 +38,14 @@ function createCard(prompt, index) {
     // Click for simple advance
     card.addEventListener('click', (e) => {
         if (!isDragging) {
-            nextCard();
+            const card = e.target.closest('.card');
+            if (card) {
+                card.classList.add('swiped-right');
+                setTimeout(() => {
+                    card.remove();
+                    nextCard();
+                }, 300);
+            }
         }
     });
     
@@ -47,24 +54,29 @@ function createCard(prompt, index) {
 
 function handleTouchStart(e) {
     e.preventDefault();
+    const card = e.target.closest('.card');
+    if (!card) return;
     isDragging = true;
     startX = e.touches[0].clientX;
-    e.target.closest('.card').classList.add('swiping');
+    card.classList.add('swiping');
 }
 
 function handleTouchMove(e) {
     if (!isDragging) return;
     e.preventDefault();
+    const card = e.target.closest('.card');
+    if (!card) return;
     currentX = e.touches[0].clientX;
     const diff = currentX - startX;
     const rotation = diff / 20;
-    e.target.closest('.card').style.transform = `translateX(${diff}px) rotate(${rotation}deg)`;
+    card.style.transform = `translateX(${diff}px) rotate(${rotation}deg)`;
 }
 
 function handleTouchEnd(e) {
     if (!isDragging) return;
     isDragging = false;
     const card = e.target.closest('.card');
+    if (!card) return;
     card.classList.remove('swiping');
     
     const diff = currentX - startX;
@@ -85,23 +97,28 @@ function handleTouchEnd(e) {
 }
 
 function handleMouseDown(e) {
+    const card = e.target.closest('.card');
+    if (!card) return;
     isDragging = true;
     startX = e.clientX;
-    e.target.closest('.card').classList.add('swiping');
+    card.classList.add('swiping');
 }
 
 function handleMouseMove(e) {
     if (!isDragging) return;
+    const card = e.target.closest('.card');
+    if (!card) return;
     currentX = e.clientX;
     const diff = currentX - startX;
     const rotation = diff / 20;
-    e.target.closest('.card').style.transform = `translateX(${diff}px) rotate(${rotation}deg)`;
+    card.style.transform = `translateX(${diff}px) rotate(${rotation}deg)`;
 }
 
 function handleMouseEnd(e) {
     if (!isDragging) return;
     isDragging = false;
     const card = e.target.closest('.card');
+    if (!card) return;
     card.classList.remove('swiping');
     
     const diff = currentX - startX;
@@ -123,7 +140,14 @@ function handleMouseEnd(e) {
 
 function nextCard() {
     currentIndex++;
-    if (currentIndex >= shuffledPrompts.length) {
+    
+    // Hide instructions after first swipe
+    const instructions = document.querySelector('.instructions');
+    if (instructions) {
+        instructions.style.opacity = '0';
+    }
+    
+    if (currentIndex >= shuffledQuotes.length) {
         currentIndex = 0;
         location.reload();
     }
@@ -131,18 +155,22 @@ function nextCard() {
 }
 
 function updateCounter() {
-    document.getElementById('counter').textContent = `${currentIndex + 1} / ${shuffledPrompts.length}`;
+    document.getElementById('counter').textContent = `${currentIndex + 1} / ${shuffledQuotes.length}`;
 }
 
 function init() {
     const cardStack = document.getElementById('cardStack');
     
-    for (let i = Math.min(3, shuffledPrompts.length) - 1; i >= 0; i--) {
-        const card = createCard(shuffledPrompts[i], i);
+    for (let i = Math.min(3, shuffledQuotes.length) - 1; i >= 0; i--) {
+        const card = createCard(shuffledQuotes[i], i);
         cardStack.appendChild(card);
     }
     
     updateCounter();
 }
 
-init();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
